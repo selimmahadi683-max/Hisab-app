@@ -1,0 +1,127 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidCurrency(code) {
+      return code in ['BDT', 'KWD'];
+    }
+
+    function isValidTransaction(data) {
+      return data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+             data.type in ['EXPENSE', 'INCOME'] &&
+             data.amountMinor is int && data.amountMinor > 0 && data.amountMinor <= 999999999999 &&
+             isValidCurrency(data.currencyCode) &&
+             data.categoryId is string && data.categoryId.size() >= 1 && data.categoryId.size() <= 40 &&
+             data.paymentMethodId is string && data.paymentMethodId.size() >= 1 && data.paymentMethodId.size() <= 40 &&
+             data.title is string && data.title.size() <= 120 &&
+             data.note is string && data.note.size() <= 300 &&
+             data.occurredAtMillis is int && data.occurredAtMillis > 0 &&
+             data.clientUpdatedAtMillis is int && data.clientUpdatedAtMillis > 0 &&
+             data.deleted is bool;
+    }
+
+    function isValidBudget(data) {
+      return data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+             isValidCurrency(data.currencyCode) &&
+             data.categoryId is string && data.categoryId.size() >= 1 && data.categoryId.size() <= 40 &&
+             data.limitMinor is int && data.limitMinor >= 0 && data.limitMinor <= 999999999999 &&
+             data.clientUpdatedAtMillis is int && data.clientUpdatedAtMillis > 0 &&
+             data.deleted is bool;
+    }
+
+    match /users/{userId}/transactions/{txId} {
+      allow list: if isOwner(userId);
+      allow get: if isOwner(userId) && isValidId(txId);
+
+      allow create: if isOwner(userId) &&
+                       isValidId(txId) &&
+                       incoming().userId == request.auth.uid &&
+                       incoming().keys().hasAll([
+                         'userId', 'type', 'amountMinor', 'currencyCode',
+                         'categoryId', 'paymentMethodId', 'title', 'note',
+                         'occurredAtMillis', 'clientUpdatedAtMillis', 'deleted',
+                         'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'type', 'amountMinor', 'currencyCode',
+                         'categoryId', 'paymentMethodId', 'title', 'note',
+                         'occurredAtMillis', 'clientUpdatedAtMillis', 'deleted',
+                         'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                       isValidTransaction(incoming());
+
+      allow update: if isOwner(userId) &&
+                       isValidId(txId) &&
+                       isValidTransaction(incoming()) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'type', 'amountMinor', 'currencyCode',
+                         'categoryId', 'paymentMethodId', 'title', 'note',
+                         'occurredAtMillis', 'clientUpdatedAtMillis', 'deleted',
+                         'updatedAt'
+                       ]);
+
+      allow delete: if isOwner(userId) && isValidId(txId);
+    }
+
+    match /users/{userId}/budgets/{budgetId} {
+      allow list: if isOwner(userId);
+      allow get: if isOwner(userId) && isValidId(budgetId);
+
+      allow create: if isOwner(userId) &&
+                       isValidId(budgetId) &&
+                       incoming().userId == request.auth.uid &&
+                       incoming().keys().hasAll([
+                         'userId', 'currencyCode', 'categoryId', 'limitMinor',
+                         'clientUpdatedAtMillis', 'deleted', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'currencyCode', 'categoryId', 'limitMinor',
+                         'clientUpdatedAtMillis', 'deleted', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                       isValidBudget(incoming());
+
+      allow update: if isOwner(userId) &&
+                       isValidId(budgetId) &&
+                       isValidBudget(incoming()) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'currencyCode', 'categoryId', 'limitMinor',
+                         'clientUpdatedAtMillis', 'deleted', 'updatedAt'
+                       ]);
+
+      allow delete: if isOwner(userId) && isValidId(budgetId);
+    }
+  }
+}

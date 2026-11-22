@@ -1,0 +1,6 @@
+{
+  "name": "HisabPro",
+  "description": "Offline-first daily expense calculator, custom budget tracker, graphical analytics, savings advisor, PDF reports, and optional cloud backup supporting BDT & KWD in Bengali, Arabic, and English.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

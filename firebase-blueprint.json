@@ -1,0 +1,148 @@
+{
+  "entities": {
+    "CloudTransaction": {
+      "title": "CloudTransaction",
+      "description": "A user's expense or income record synced from offline storage.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the owner."
+        },
+        "type": {
+          "type": "string",
+          "enum": ["EXPENSE", "INCOME"],
+          "description": "Transaction direction."
+        },
+        "amountMinor": {
+          "type": "integer",
+          "description": "Exact amount in minor currency units (poisha for BDT, fils for KWD)."
+        },
+        "currencyCode": {
+          "type": "string",
+          "enum": ["BDT", "KWD"],
+          "description": "Currency code (BDT or KWD)."
+        },
+        "categoryId": {
+          "type": "string",
+          "description": "Category identifier."
+        },
+        "paymentMethodId": {
+          "type": "string",
+          "description": "Payment method identifier."
+        },
+        "title": {
+          "type": "string",
+          "description": "Short item or merchant title."
+        },
+        "note": {
+          "type": "string",
+          "description": "Optional descriptive note."
+        },
+        "occurredAtMillis": {
+          "type": "integer",
+          "description": "Epoch milliseconds when transaction occurred."
+        },
+        "clientUpdatedAtMillis": {
+          "type": "integer",
+          "description": "Epoch milliseconds of last client edit for offline merge."
+        },
+        "deleted": {
+          "type": "boolean",
+          "description": "Soft-delete tombstone flag for multi-device sync."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp set via FieldValue.serverTimestamp()."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp updated via FieldValue.serverTimestamp()."
+        }
+      },
+      "required": [
+        "userId",
+        "type",
+        "amountMinor",
+        "currencyCode",
+        "categoryId",
+        "paymentMethodId",
+        "title",
+        "note",
+        "occurredAtMillis",
+        "clientUpdatedAtMillis",
+        "deleted",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "CloudBudget": {
+      "title": "CloudBudget",
+      "description": "A user's overall or per-category monthly budget configuration.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the owner."
+        },
+        "currencyCode": {
+          "type": "string",
+          "enum": ["BDT", "KWD"],
+          "description": "Currency code (BDT or KWD)."
+        },
+        "categoryId": {
+          "type": "string",
+          "description": "OVERALL or specific category identifier."
+        },
+        "limitMinor": {
+          "type": "integer",
+          "description": "Monthly budget limit in minor currency units."
+        },
+        "clientUpdatedAtMillis": {
+          "type": "integer",
+          "description": "Epoch milliseconds of last client edit."
+        },
+        "deleted": {
+          "type": "boolean",
+          "description": "Soft-delete flag."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp set via FieldValue.serverTimestamp()."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp updated via FieldValue.serverTimestamp()."
+        }
+      },
+      "required": [
+        "userId",
+        "currencyCode",
+        "categoryId",
+        "limitMinor",
+        "clientUpdatedAtMillis",
+        "deleted",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/transactions/{txId}": {
+      "schema": {
+        "$ref": "#/entities/CloudTransaction"
+      },
+      "description": "Per-user offline-synced expense and income transactions."
+    },
+    "/users/{userId}/budgets/{budgetId}": {
+      "schema": {
+        "$ref": "#/entities/CloudBudget"
+      },
+      "description": "Per-user custom overall and category budget limits."
+    }
+  }
+}
